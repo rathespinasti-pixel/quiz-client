@@ -20,7 +20,7 @@ function ResultContent() {
     if (!attemptId) return;
     const stored = sessionStorage.getItem(`result_${attemptId}`);
     if (stored) {
-      setResult(JSON.parse(stored));
+      queueMicrotask(() => setResult(JSON.parse(stored)));
     }
   }, [attemptId]);
 

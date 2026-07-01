@@ -23,7 +23,9 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem(`result_${attemptId}`)
-    if (stored) setResult(JSON.parse(stored))
+    if (stored) {
+      queueMicrotask(() => setResult(JSON.parse(stored)))
+    }
 
     api
       .get(`/attempts/${attemptId}`)

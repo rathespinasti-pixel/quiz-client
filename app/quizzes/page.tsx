@@ -32,16 +32,26 @@ function QuizzesContent() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
+    let cancelled = false
     const params: Record<string, string> = {}
     if (search) params.search = search
     if (selectedCategory) params.category_id = String(selectedCategory)
 
     api
       .get("/quizzes", { params })
-      .then((r) => setQuizzes(r.data))
-      .catch(() => setQuizzes([]))
-      .finally(() => setLoading(false))
+      .then((r) => {
+        if (!cancelled) setQuizzes(r.data)
+      })
+      .catch(() => {
+        if (!cancelled) setQuizzes([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [search, selectedCategory])
 
   return (
@@ -58,12 +68,18 @@ function QuizzesContent() {
           placeholder="Search quizzes..."
           className="max-w-sm"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setLoading(true)
+            setSearch(e.target.value)
+          }}
         />
         <Button
           variant={selectedCategory === null ? "default" : "outline"}
           size="sm"
-          onClick={() => setSelectedCategory(null)}
+          onClick={() => {
+            setLoading(true)
+            setSelectedCategory(null)
+          }}
         >
           All
         </Button>
@@ -72,7 +88,10 @@ function QuizzesContent() {
             key={cat.id}
             variant={selectedCategory === cat.id ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedCategory(cat.id)}
+            onClick={() => {
+              setLoading(true)
+              setSelectedCategory(cat.id)
+            }}
           >
             {cat.name}
           </Button>

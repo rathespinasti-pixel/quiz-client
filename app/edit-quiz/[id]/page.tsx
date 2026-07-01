@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { PlusCircle, Trash2 } from "lucide-react"
 
@@ -51,18 +51,18 @@ export default function EditQuizPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const load = () => {
+  const load = useCallback(() => {
     api
       .get(`/quizzes/${id}`)
       .then((r) => setQuiz(r.data))
       .catch(() => setError("Quiz not found"))
       .finally(() => setLoading(false))
-  }
+  }, [id])
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {})
     load()
-  }, [id])
+  }, [load])
 
   const handleSave = async () => {
     if (!quiz) return

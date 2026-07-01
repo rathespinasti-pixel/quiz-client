@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 
 import PageLoading from "@/components/page-loading"
-import ProtectedRoute from "@/components/ProtectedRoute"
 import {
   Card,
   CardDescription,

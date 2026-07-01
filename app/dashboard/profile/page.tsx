@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import ProtectedRoute from "@/components/ProtectedRoute"
 import { Button } from "@/components/ui/button"
@@ -17,13 +17,8 @@ import api from "@/lib/api"
 
 export default function ProfilePage() {
   const { user, refreshProfile } = useAuth()
-  const [username, setUsername] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
-
-  useEffect(() => {
-    if (user) setUsername(user.username)
-  }, [user])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,7 +46,7 @@ export default function ProfilePage() {
               {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex flex-col gap-2">
                 <Label>Username</Label>
-                <Input value={username} disabled />
+                <Input value={user?.username || ""} disabled />
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Email</Label>

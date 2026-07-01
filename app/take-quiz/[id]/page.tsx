@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useCallback, useEffect, useRef, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
@@ -29,46 +29,11 @@ function TakeQuizContent() {
   const [submitting, setSubmitting] = useState(false)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
 
-  useEffect(() => {
-    if (!attemptId) {
-      router.push(`/quizzes/${id}`)
-      return
-    }
-    const stored = sessionStorage.getItem(`attempt_${id}`)
-    if (stored) {
-      const data = JSON.parse(stored) as StartAttemptResponse
-      setAttemptData(data)
-      if (data.time_limit) setTimeLeft(data.time_limit * 60)
-    } else {
-      router.push(`/quizzes/${id}`)
-    }
-  }, [id, attemptId, router])
-
-  useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0) return
-    const timer = setInterval(() => {
-      setTimeLeft((t) => (t !== null && t > 0 ? t - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [timeLeft])
-
-  useEffect(() => {
-    if (timeLeft === 0 && attemptData && !submitting) {
-      handleSubmit()
-    }
-  }, [timeLeft])
-
-  const questions: Question[] = attemptData?.questions || []
-  const question = questions[current]
-
-  const handleSelect = (questionId: number, answer: string) => {
-    setSelected((prev) => ({ ...prev, [questionId]: answer }))
-  }
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!attemptId) return
     setSubmitting(true)
     try {
+      const questions = attemptData?.questions || []
       const answers = questions
         .map((q) => ({
           question_id: q.id,
@@ -87,6 +52,53 @@ function TakeQuizContent() {
     } finally {
       setSubmitting(false)
     }
+  }, [attemptId, attemptData, id, router, selected])
+
+  const handleSubmitRef = useRef(handleSubmit)
+
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit
+  }, [handleSubmit])
+
+  useEffect(() => {
+    if (!attemptId) {
+      router.push(`/quizzes/${id}`)
+      return
+    }
+    const stored = sessionStorage.getItem(`attempt_${id}`)
+    if (stored) {
+      const data = JSON.parse(stored) as StartAttemptResponse
+      queueMicrotask(() => {
+        setAttemptData(data)
+        if (data.time_limit) setTimeLeft(data.time_limit * 60)
+      })
+    } else {
+      router.push(`/quizzes/${id}`)
+    }
+  }, [id, attemptId, router])
+
+  const timerActive = timeLeft !== null && timeLeft > 0
+
+  useEffect(() => {
+    if (!timerActive) return
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t === null || t <= 0) return 0
+        if (t === 1) {
+          void handleSubmitRef.current()
+          return 0
+        }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [timerActive])
+
+  const questions: Question[] = attemptData?.questions || []
+  const question = questions[current]
+
+  const handleSelect = (questionId: number, answer: string) => {
+    setSelected((prev) => ({ ...prev, [questionId]: answer }))
   }
 
   if (!attemptData) return <PageLoading />

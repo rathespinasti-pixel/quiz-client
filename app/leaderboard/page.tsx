@@ -29,7 +29,6 @@ function LeaderboardContent() {
   }, [])
 
   useEffect(() => {
-    setLoading(true)
     const url = quizId
       ? `/leaderboard/quiz/${quizId}`
       : selectedCategory
@@ -37,16 +36,29 @@ function LeaderboardContent() {
         : null
 
     if (!url) {
-      setEntries([])
-      setLoading(false)
+      queueMicrotask(() => {
+        setEntries([])
+        setLoading(false)
+      })
       return
     }
 
+    let cancelled = false
     api
       .get(url)
-      .then((r) => setEntries(r.data))
-      .catch(() => setEntries([]))
-      .finally(() => setLoading(false))
+      .then((r) => {
+        if (!cancelled) setEntries(r.data)
+      })
+      .catch(() => {
+        if (!cancelled) setEntries([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [quizId, selectedCategory])
 
   return (
@@ -65,7 +77,10 @@ function LeaderboardContent() {
               key={cat.id}
               variant={selectedCategory === cat.id ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => {
+                setLoading(true)
+                setSelectedCategory(cat.id)
+              }}
             >
               {cat.name}
             </Button>
